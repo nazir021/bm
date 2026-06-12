@@ -1328,32 +1328,36 @@ function renderSummary() {
   `;
 }
 
-function buildInterestByMonth() {
+function buildMonthlyBreakdownData() {
   const mids = Object.keys(MEMBERS).map(Number);
-  const interestByMonth = {};
+  const breakdown = {};
   for (const mid of mids) {
-    interestByMonth[mid] = Array(60).fill(0);
+    breakdown[mid] = Array(60).fill({ interest: 0, openBal: 0 });
     const ledger = buildLedger(mid);
     for (const row of ledger) {
-      interestByMonth[mid][row.idx] = row.interest;
+      breakdown[mid][row.idx] = { interest: row.interest, openBal: row.openBal };
     }
   }
-  return interestByMonth;
+  return breakdown;
 }
 
 function renderMonthlyBreakdown() {
   const monthIndex = parseInt(document.getElementById('monthlyBreakdownMonthSelect').value, 10);
   const mids = Object.keys(MEMBERS).map(Number);
-  const interestByMonth = buildInterestByMonth();
-  const rows = mids.map(mid => ({ mid, name: MEMBERS[mid], interest: interestByMonth[mid][monthIndex] || 0 }))
-    .sort((a, b) => b.interest - a.interest || a.name.localeCompare(b.name));
+  const breakdownData = buildMonthlyBreakdownData();
+  const rows = mids.map(mid => {
+    const { interest, openBal } = breakdownData[mid][monthIndex] || { interest: 0, openBal: 0 };
+    return { mid, name: MEMBERS[mid], interest, loanAmt: interest > 0 ? openBal : 0 };
+  }).sort((a, b) => b.interest - a.interest || b.loanAmt - a.loanAmt || a.name.localeCompare(b.name));
 
   const totalInterest = rows.reduce((sum, row) => sum + row.interest, 0);
+  const totalLoans = rows.reduce((sum, row) => sum + row.loanAmt, 0);
   let tableRows = '';
   for (const row of rows) {
     tableRows += `<tr>
       <td>${row.mid}</td>
       <td>${row.name}</td>
+      <td style="color:var(--color-text-danger)">${row.loanAmt > 0 ? '৳'+fmt(row.loanAmt) : '—'}</td>
       <td style="color:var(--color-text-warning)">৳${fmt(row.interest)}</td>
     </tr>`;
   }
@@ -1362,12 +1366,13 @@ function renderMonthlyBreakdown() {
     <div class="summary-cards">
       <div class="scard"><div class="scard-label">Month</div><div class="scard-val">${monthLabel(monthIndex)}</div></div>
       <div class="scard"><div class="scard-label">Total interest</div><div class="scard-val">৳${fmt(totalInterest)}</div></div>
-      <div class="scard" style="grid-column:span 2"><div class="scard-label">View</div><div class="scard-val">Interest per member</div></div>
+      <div class="scard"><div class="scard-label">Total loans</div><div class="scard-val">৳${fmt(totalLoans)}</div></div>
     </div>
     <div class="summary-table-wrap"><table>
       <thead><tr>
         <th style="text-align:left">ID</th>
         <th style="text-align:left">Member</th>
+        <th style="text-align:left">Loan (৳)</th>
         <th style="text-align:left">Interest (৳)</th>
       </tr></thead>
       <tbody>${tableRows}</tbody>
