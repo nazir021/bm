@@ -7,6 +7,8 @@
   <meta name="description" content="Sawpno Society Bondhu Mahal Loan Ledger System 2021–2026" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="icon" src="./logo.png" />
+  <link rel="shortcut icon" src="logo.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
@@ -113,9 +115,41 @@
       border-radius: 50%;
       background: var(--color-info-bg);
       display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
       font-weight: 600; font-size: 12px;
       color: var(--color-info);
       letter-spacing: .5px;
+    }
+
+    .bank-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .bank-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+    }
+
+    .rules-button {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+      color: var(--color-text-primary);
+      text-decoration: none;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+
+    .rules-button:hover {
+      background: var(--color-text-primary);
+      color: #fff;
+      border-color: var(--color-text-primary);
     }
 
     .bank-title { font-size: 14px; font-weight: 600; color: var(--color-text-primary); }
@@ -568,17 +602,24 @@
 <h2 class="sr-only">Sawpno Society Bondhu Mahal — Loan Ledger System (2021–2026)</h2>
 
 <div class="bank-header">
-  <div class="bank-logo">SB</div>
+  <div class="bank-logo">
+    <img src="logo.png" alt="Sawpno Society logo" />
+  </div>
   <div>
     <div class="bank-title">Sawpno Society Bondhu Mahal</div>
     <div class="bank-sub">Loan Ledger · 01 July 2021 – 01 June 2026 · 60 Months</div>
+  </div>
+  <div class="bank-actions">
+    <a class="rules-button" src="সপ্ন সোসাইটি বন্ধু মহল নিয়মাবলী.pdf" download>Rules</a>
   </div>
 </div>
 
 <div class="tabs">
   <button class="tab" onclick="showTab('details')">Member Details</button>
-  <button class="tab active" onclick="showTab('summary')">All Members Summary</button>
-  <button class="tab" onclick="showTab('member')">Individual Ledger</button>
+  <button class="tab" onclick="showTab('savingsDetails')">Savings Details</button>
+  <button class="tab" onclick="showTab('savings')">Individual Savings</button>
+  <button class="tab active" onclick="showTab('summary')">Loan Details</button>
+  <button class="tab" onclick="showTab('member')">Individual Loan</button>
   <button class="tab" onclick="showTab('monthly')">Monthly Overview</button>
 </div>
 
@@ -587,6 +628,13 @@
     <select id="detailsSelect" onchange="renderDetails()"></select>
   </div>
   <div id="detailsContent"></div>
+</div>
+<div id="savingsDetails" class="section"></div>
+<div id="savings" class="section">
+  <div class="member-select">
+    <select id="savingsSelect" onchange="renderSavings()"></select>
+  </div>
+  <div id="savingsContent"></div>
 </div>
 <div id="summary" class="section active"></div>
 <div id="member" class="section">
@@ -606,13 +654,21 @@
     <i data-lucide="info"></i>
     <span>Details</span>
   </button>
+  <button class="bnav-item" id="bnav-savingsDetails" onclick="showTab('savingsDetails')">
+    <i data-lucide="piggy-bank"></i>
+    <span>Savings</span>
+  </button>
+  <button class="bnav-item" id="bnav-savings" onclick="showTab('savings')">
+    <i data-lucide="dollar-sign"></i>
+    <span>Indv Sav</span>
+  </button>
   <button class="bnav-item active" id="bnav-summary" onclick="showTab('summary')">
     <i data-lucide="users"></i>
-    <span>Summary</span>
+    <span>Loan</span>
   </button>
   <button class="bnav-item" id="bnav-member" onclick="showTab('member')">
     <i data-lucide="user"></i>
-    <span>Ledger</span>
+    <span>Indv Loan</span>
   </button>
   <button class="bnav-item" id="bnav-monthly" onclick="showTab('monthly')">
     <i data-lucide="calendar-days"></i>
@@ -943,6 +999,187 @@ function renderMemberDetails(mid) {
   </div>`;
 }
 
+function monthlySavingsAmount(i) {
+  return i >= monthIdx(2024, 7) ? 3000 : 2000;
+}
+
+function isSavingsTopup(i) {
+  const { y, m } = idxToYM(i);
+  if (y >= 2022 && y <= 2025 && (m === 1 || m === 7)) return true;
+  return y === 2026 && m === 1;
+}
+
+function buildSavingsLedger(mid) {
+  const rows = [];
+  let balance = 0;
+  for (let i = 0; i < 60; i++) {
+    const openBal = balance;
+    const monthly = monthlySavingsAmount(i);
+    const topup = isSavingsTopup(i) ? 12500 : 0;
+    balance += monthly + topup;
+    rows.push({
+      idx: i,
+      label: monthLabel(i),
+      openBal,
+      monthly,
+      topup,
+      closeBal: balance
+    });
+  }
+  return rows;
+}
+
+function renderMemberSavings(mid) {
+  const rows = buildSavingsLedger(mid);
+  const name = MEMBERS[mid];
+  const inits = initials(name);
+  const totalMonthly = rows.reduce((s, r) => s + r.monthly, 0);
+  const totalTopup = rows.reduce((s, r) => s + r.topup, 0);
+  const currentBalance = rows.length ? rows[rows.length - 1].closeBal : 0;
+
+  const cardsHtml = `<div class="summary-cards">
+    <div class="scard"><div class="scard-label">Current savings</div><div class="scard-val">৳${fmt(currentBalance)}</div></div>
+    <div class="scard"><div class="scard-label">Monthly deposits</div><div class="scard-val">৳${fmt(totalMonthly)}</div></div>
+    <div class="scard"><div class="scard-label">One-time top-ups</div><div class="scard-val">৳${fmt(totalTopup)}</div></div>
+    <div class="scard"><div class="scard-label">Period</div><div class="scard-val">Jul 2021 – Jun 2026</div></div>
+  </div>`;
+
+  let tableRows = '';
+  for (const r of rows) {
+    tableRows += `<tr>
+      <td data-label="Month">${r.label}</td>
+      <td data-label="Monthly deposit">৳${fmt(r.monthly)}</td>
+      <td data-label="Top-up">${r.topup > 0 ? '৳'+fmt(r.topup) : '—'}</td>
+      <td data-label="Closing bal" style="font-weight:600">৳${fmt(r.closeBal)}</td>
+    </tr>`;
+  }
+
+  const totalRow = `<tr class="total-row">
+    <td>Total / Running</td>
+    <td>৳${fmt(totalMonthly)}</td>
+    <td>৳${fmt(totalTopup)}</td>
+    <td>৳${fmt(currentBalance)}</td>
+  </tr>`;
+
+  return `<div class="member-header">
+    <div class="member-avatar">${inits}</div>
+    <div>
+      <div class="member-name">${name}</div>
+      <div class="member-id">Member ID: ${mid}</div>
+    </div>
+  </div>${cardsHtml}<div class="ledger-table-wrap"><table>
+    <thead><tr>
+      <th>Month</th>
+      <th>Monthly deposit (৳)</th>
+      <th>Top-up (৳)</th>
+      <th>Closing balance (৳)</th>
+    </tr></thead>
+    <tbody>${tableRows}${totalRow}</tbody>
+  </table></div>`;
+}
+
+function renderSavings() {
+  const mid = parseInt(document.getElementById('savingsSelect').value);
+  document.getElementById('savingsContent').innerHTML = renderMemberSavings(mid);
+}
+
+function renderSavingsDetails() {
+  const mids = Object.keys(MEMBERS).map(Number);
+  let tableRows = '';
+  let mobileCards = '';
+  const totals = {monthly:0, topup:0, balance:0};
+
+  for (const mid of mids) {
+    const ledger = buildSavingsLedger(mid);
+    const totalMonthly = ledger.reduce((s, r) => s + r.monthly, 0);
+    const totalTopup = ledger.reduce((s, r) => s + r.topup, 0);
+    const bal = ledger.length ? ledger[ledger.length-1].closeBal : 0;
+    totals.monthly += totalMonthly;
+    totals.topup += totalTopup;
+    totals.balance += bal;
+    const firstActivity = ledger[0] ? ledger[0].label : '—';
+    const lastActivity = ledger[ledger.length-1] ? ledger[ledger.length-1].label : '—';
+    const inits = initials(MEMBERS[mid]);
+
+    tableRows += `<tr>
+      <td>${mid}</td>
+      <td>${MEMBERS[mid]}</td>
+      <td>${firstActivity}</td>
+      <td>${lastActivity}</td>
+      <td>৳${fmt(totalMonthly)}</td>
+      <td>৳${fmt(totalTopup)}</td>
+      <td>৳${fmt(bal)}</td>
+      <td><button onclick="gotoIndividualSavings(${mid})" style="font-size:11px;padding:3px 10px;cursor:pointer">View ↗</button></td>
+    </tr>`;
+
+    mobileCards += `<div class="member-card">
+      <div class="member-card-top">
+        <div class="member-card-avatar">${inits}</div>
+        <div>
+          <div class="member-card-name">${MEMBERS[mid]}</div>
+          <div class="member-card-meta">ID: ${mid} · ${firstActivity} – ${lastActivity}</div>
+        </div>
+      </div>
+      <div class="member-card-body">
+        <div class="member-card-stat">
+          <div class="mcs-label">Monthly</div>
+          <div class="mcs-val">৳${fmt(totalMonthly)}</div>
+        </div>
+        <div class="member-card-stat">
+          <div class="mcs-label">Top-up</div>
+          <div class="mcs-val info">৳${fmt(totalTopup)}</div>
+        </div>
+        <div class="member-card-stat">
+          <div class="mcs-label">Balance</div>
+          <div class="mcs-val">৳${fmt(bal)}</div>
+        </div>
+      </div>
+      <div class="member-card-footer">
+        <button class="btn-view" onclick="gotoIndividualSavings(${mid})">View Savings ↗</button>
+      </div>
+    </div>`;
+  }
+
+  const totalRow = `<tr class="total-row">
+    <td colspan="4">Grand total</td>
+    <td>৳${fmt(totals.monthly)}</td>
+    <td>৳${fmt(totals.topup)}</td>
+    <td>৳${fmt(totals.balance)}</td>
+    <td></td>
+  </tr>`;
+
+  document.getElementById('savingsDetails').innerHTML = `
+    ${mobileCards}
+    <div class="grand-total-card">
+      <div class="grand-total-label">Grand Total</div>
+      <div class="grand-total-grid">
+        <div><div class="gt-item-label">Monthly savings</div><div class="gt-item-val">৳${fmt(totals.monthly)}</div></div>
+        <div><div class="gt-item-label">Top-ups</div><div class="gt-item-val info">৳${fmt(totals.topup)}</div></div>
+        <div><div class="gt-item-label">Total balance</div><div class="gt-item-val">৳${fmt(totals.balance)}</div></div>
+      </div>
+    </div>
+    <div class="summary-table-wrap"><table>
+      <thead><tr>
+        <th style="text-align:left">ID</th>
+        <th style="text-align:left">Name</th>
+        <th style="text-align:left">First txn</th>
+        <th style="text-align:left">Last txn</th>
+        <th>Total monthly</th>
+        <th>Total top-up</th>
+        <th>Total balance</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${tableRows}${totalRow}</tbody>
+    </table></div>
+  `;
+}
+
+function gotoIndividualSavings(mid) {
+  showTab('savings');
+  document.getElementById('savingsSelect').value = mid;
+  renderSavings();
+}
+
 function renderDetails() {
   const mid = parseInt(document.getElementById('detailsSelect').value);
   document.getElementById('detailsContent').innerHTML = renderMemberDetails(mid);
@@ -1162,7 +1399,7 @@ function showTab(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const tabs = ['details','summary','member','monthly'];
+  const tabs = ['details','savingsDetails','savings','summary','member','monthly'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   const bnavEl = document.getElementById('bnav-' + id);
   if (bnavEl) bnavEl.classList.add('active');
@@ -1193,10 +1430,19 @@ for (const [id, name] of Object.entries(MEMBERS)) {
   opt.textContent = `${id} — ${name}`;
   detailsSel.appendChild(opt);
 }
+const savingsSel = document.getElementById('savingsSelect');
+for (const [id, name] of Object.entries(MEMBERS)) {
+  const opt = document.createElement('option');
+  opt.value = id;
+  opt.textContent = `${id} — ${name}`;
+  savingsSel.appendChild(opt);
+}
+renderSavingsDetails();
 renderSummary();
 renderMonthly();
 renderMember();
 renderDetails();
+renderSavings();
 
 // Init Lucide icons
 lucide.createIcons();
