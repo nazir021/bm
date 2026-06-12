@@ -576,11 +576,18 @@
 </div>
 
 <div class="tabs">
+  <button class="tab" onclick="showTab('details')">Member Details</button>
   <button class="tab active" onclick="showTab('summary')">All Members Summary</button>
   <button class="tab" onclick="showTab('member')">Individual Ledger</button>
   <button class="tab" onclick="showTab('monthly')">Monthly Overview</button>
 </div>
 
+<div id="details" class="section">
+  <div class="member-select">
+    <select id="detailsSelect" onchange="renderDetails()"></select>
+  </div>
+  <div id="detailsContent"></div>
+</div>
 <div id="summary" class="section active"></div>
 <div id="member" class="section">
   <div class="member-select">
@@ -595,6 +602,10 @@
 
 <!-- Bottom navigation (mobile only) -->
 <nav class="bottom-nav" id="bottomNav">
+  <button class="bnav-item" id="bnav-details" onclick="showTab('details')">
+    <i data-lucide="info"></i>
+    <span>Details</span>
+  </button>
   <button class="bnav-item active" id="bnav-summary" onclick="showTab('summary')">
     <i data-lucide="users"></i>
     <span>Summary</span>
@@ -631,6 +642,27 @@ const MEMBERS = {
   116: "Shafiqul Islam",
   117: "Akibul Islam",
   118: "Md Nazir Ahmed"
+};
+
+const MEMBER_DETAILS = {
+  101: { nid: '1017692532', birth: '23/10/1973', nomineeName: 'Mst Sultana', nomineeNid: '5985375285', relation: 'Wife' },
+  102: { nid: '5985375285', birth: '23/10/1982', nomineeName: 'Md Harun', nomineeNid: '1017692532', relation: 'Husband' },
+  103: { nid: '5118527547', birth: '22/10/1999', nomineeName: 'Mst Sultana', nomineeNid: '5985375285', relation: 'Mother' },
+  104: { nid: '8235768564', birth: '15/05/1987', nomineeName: 'Zonaet Hosen', nomineeNid: '1052013', relation: 'Son' },
+  105: { nid: '8650200911', birth: '01/01/1979', nomineeName: 'Shireen Akter', nomineeNid: '5117323523752', relation: 'Wife' },
+  106: { nid: '5117323523752', birth: '20/01/1968', nomineeName: 'Md Shajahan', nomineeNid: '8650200911', relation: 'Husband' },
+  107: { nid: '22092018', birth: '22/09/2018', nomineeName: 'Shireen Akter', nomineeNid: '5117323523752', relation: 'Mother' },
+  108: { nid: '19901317917000121', birth: '04/03/1990', nomineeName: 'Muslima Akter', nomineeNid: '1011997', relation: 'Wife' },
+  109: { nid: '1317917282767', birth: '31/12/1988', nomineeName: 'Amena Akter', nomineeNid: '3301680652', relation: 'Sister' },
+  110: { nid: '3301680652', birth: '01/01/1992', nomineeName: 'Fatema Khatun', nomineeNid: '1317917282767', relation: 'Sister' },
+  111: { nid: '5950097369', birth: '02/07/1987', nomineeName: 'Jahanara Akter', nomineeNid: '2414793162', relation: 'Wife' },
+  112: { nid: '2072021', birth: '02/07/2021', nomineeName: 'Jahanara Akter', nomineeNid: '2414793162', relation: 'Mother' },
+  113: { nid: '7770049695', birth: '04/04/1981', nomineeName: '', nomineeNid: '', relation: '' },
+  114: { nid: '4169870468', birth: '10/10/1985', nomineeName: 'Jamuna Khatun', nomineeNid: '7816965482', relation: 'Wife' },
+  115: { nid: '6906150682', birth: '20/05/1992', nomineeName: 'Rima Katun', nomineeNid: '6912532360', relation: 'Wife' },
+  116: { nid: '', birth: '', nomineeName: '', nomineeNid: '', relation: '' },
+  117: { nid: '7354674801', birth: '03/06/1998', nomineeName: 'Khadiza Akter Sonia', nomineeNid: '6911511951', relation: 'Wife' },
+  118: { nid: '3761346372', birth: '21/04/1999', nomineeName: 'Nazma Begum', nomineeNid: '3724839117', relation: 'Mother' }
 };
 
 // month index: 0 = Jul 2021, 1 = Aug 2021, ...
@@ -885,6 +917,43 @@ function renderMemberLedger(mid) {
   </table></div>`;
 }
 
+function renderMemberDetails(mid) {
+  const name = MEMBERS[mid];
+  const details = MEMBER_DETAILS[mid] || {};
+  const inits = initials(name);
+  const nid = details.nid || '—';
+  const birth = details.birth || '—';
+  const nominee = details.nomineeName || '—';
+  const nomineeNid = details.nomineeNid || '—';
+  const relation = details.relation || '—';
+
+  return `<div class="member-header">
+    <div class="member-avatar">${inits}</div>
+    <div>
+      <div class="member-name">${name}</div>
+      <div class="member-id">Member ID: ${mid}</div>
+    </div>
+  </div>
+  <div class="summary-cards">
+    <div class="scard"><div class="scard-label">NID No</div><div class="scard-val">${nid}</div></div>
+    <div class="scard"><div class="scard-label">Birth date</div><div class="scard-val">${birth}</div></div>
+    <div class="scard"><div class="scard-label">Nominee</div><div class="scard-val">${nominee}</div></div>
+    <div class="scard"><div class="scard-label">Nominee NID</div><div class="scard-val">${nomineeNid}</div></div>
+    <div class="scard" style="grid-column:span 2"><div class="scard-label">Relation of nominee</div><div class="scard-val">${relation}</div></div>
+  </div>`;
+}
+
+function renderDetails() {
+  const mid = parseInt(document.getElementById('detailsSelect').value);
+  document.getElementById('detailsContent').innerHTML = renderMemberDetails(mid);
+}
+
+function gotoDetails(mid) {
+  showTab('details');
+  document.getElementById('detailsSelect').value = mid;
+  renderDetails();
+}
+
 function renderMember() {
   const mid = parseInt(document.getElementById('memberSelect').value);
   const name = MEMBERS[mid];
@@ -1093,7 +1162,7 @@ function showTab(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const tabs = ['summary','member','monthly'];
+  const tabs = ['details','summary','member','monthly'];
   document.querySelectorAll('.tab')[tabs.indexOf(id)].classList.add('active');
   const bnavEl = document.getElementById('bnav-' + id);
   if (bnavEl) bnavEl.classList.add('active');
@@ -1117,9 +1186,17 @@ for (const [id, name] of Object.entries(MEMBERS)) {
     sel.appendChild(opt);
   }
 }
+const detailsSel = document.getElementById('detailsSelect');
+for (const [id, name] of Object.entries(MEMBERS)) {
+  const opt = document.createElement('option');
+  opt.value = id;
+  opt.textContent = `${id} — ${name}`;
+  detailsSel.appendChild(opt);
+}
 renderSummary();
 renderMonthly();
 renderMember();
+renderDetails();
 
 // Init Lucide icons
 lucide.createIcons();
